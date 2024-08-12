@@ -1,5 +1,5 @@
 'use client';
-import MainMap from "@/components/map/MainMap";
+import MainMap from '@/components/map/MainMap';
 export default function Home() {
   return (
     <main>

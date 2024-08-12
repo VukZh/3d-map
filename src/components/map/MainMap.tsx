@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import mapboxgl, { Map, MapMouseEvent, EventData } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { isComplexBuilding } from '@/helpers/utils';
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
@@ -11,6 +12,8 @@ export default function MainMap() {
   const [selectedBuildingId, setSelectedBuildingId] = useState<
     string | number | null
   >(null);
+  const [selectedOtherBuildings, setSelectedOtherBuildings] =
+    useState<number[]>();
 
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const map = useRef<Map | null>(null);
@@ -26,6 +29,8 @@ export default function MainMap() {
 
     if (map.current instanceof mapboxgl.Map) {
       map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+      map.current.setMaxPitch(60);
+
       map.current.on('move', () => {
         if (map.current instanceof mapboxgl.Map) {
           setLng(map.current.getCenter().lng);
@@ -48,7 +53,12 @@ export default function MainMap() {
           const labelLayerId = layers?.find(
             (layer) => layer.type === 'symbol' && layer.layout?.['text-field'],
           )?.id;
-
+          map.current.setLight({
+            anchor: 'map',
+            color: 'rgba(255, 255, 255, 0.9)',
+            intensity: 0.6,
+            position: [50, 210, 30],
+          });
           map.current.addLayer(
             {
               id: '3DBuildings',
@@ -58,12 +68,7 @@ export default function MainMap() {
               type: 'fill-extrusion',
               minzoom: 15,
               paint: {
-                'fill-extrusion-color': [
-                  'case',
-                  ['==', ['id'], ['literal', selectedBuildingId]],
-                  '#959',
-                  '#aaa',
-                ],
+                'fill-extrusion-color': '#aaa',
                 'fill-extrusion-height': [
                   'interpolate',
                   ['linear'],
@@ -94,14 +99,29 @@ export default function MainMap() {
             (e: MapMouseEvent & EventData) => {
               if (e.features && e.features.length > 0) {
                 const clickedBuildingId = e.features[0].id;
-                setSelectedBuildingId((prevId) =>
-                  prevId === clickedBuildingId ? null : clickedBuildingId,
+                console.log('Selected Building ID:', clickedBuildingId);
+                console.log(
+                  'Building Properties:',
+                  e.features[0]._vectorTileFeature._values,
                 );
+                let buildingIsCleared = false;
+                if (clickedBuildingId === selectedBuildingId) {
+                  buildingIsCleared = true;
+                  setSelectedBuildingId(null);
+                } else {
+                  setSelectedBuildingId(clickedBuildingId);
+                }
+                if (!buildingIsCleared && isComplexBuilding(e)) {
+                  setSelectedOtherBuildings([clickedBuildingId]);
+                } else {
+                  setSelectedOtherBuildings([]);
+                }
               }
             },
           );
 
           map.current.on('click', (e: MapMouseEvent & EventData) => {
+            console.log('Clicked:', map.current?.getProjection());
             if (map.current instanceof mapboxgl.Map) {
               const features = map.current.queryRenderedFeatures(e.point, {
                 layers: ['3DBuildings'],
@@ -147,8 +167,14 @@ export default function MainMap() {
         map.current.setPaintProperty('3DBuildings', 'fill-extrusion-color', [
           'case',
           ['==', ['id'], ['literal', selectedBuildingId]],
-          '#959',
+          selectedOtherBuildings.length ? '#959' : '#851',
           '#aaa',
+        ]);
+        map.current.setPaintProperty('3DBuildings', 'fill-extrusion-height', [
+          'case',
+          ['==', ['id'], ['literal', selectedBuildingId]],
+          ['*', ['get', 'height'], 1.05],
+          ['get', 'height'],
         ]);
       }
     };
@@ -172,7 +198,7 @@ export default function MainMap() {
     <div className="relative w-full h-screen">
       <div className="absolute top-4 left-4 bg-gray-800 bg-opacity-45 text-white p-2 rounded-md shadow-md z-10">
         <p className="text-sm font-mono">
-          Longitude: {lng.toFixed(3)} | Latitude: {lat.toFixed(3)} | Zoom:{' '}
+          Long: {lng.toFixed(3)} | Lat: {lat.toFixed(3)} | Zoom:{' '}
           {zoom.toFixed(1)}
         </p>
       </div>
