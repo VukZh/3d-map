@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import mapboxgl, { Map, MapMouseEvent, EventData } from 'mapbox-gl';
+import mapboxgl, {
+  Map,
+  MapMouseEvent,
+  EventData,
+  MapboxGeoJSONFeature,
+} from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { isComplexBuilding } from '@/helpers/utils';
+import { foundComplexBuildings, isComplexBuilding } from '@/helpers/utils';
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
@@ -9,11 +14,9 @@ export default function MainMap() {
   const [lng, setLng] = useState(76.92);
   const [lat, setLat] = useState(43.25);
   const [zoom, setZoom] = useState(11);
-  const [selectedBuildingId, setSelectedBuildingId] = useState<
-    string | number | null
-  >(null);
+  const [selectedBuildingId, setSelectedBuildingId] = useState<number>(null);
   const [selectedOtherBuildings, setSelectedOtherBuildings] =
-    useState<number[]>();
+    useState<MapboxGeoJSONFeature[]>();
 
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const map = useRef<Map | null>(null);
@@ -107,12 +110,18 @@ export default function MainMap() {
                 let buildingIsCleared = false;
                 if (clickedBuildingId === selectedBuildingId) {
                   buildingIsCleared = true;
-                  setSelectedBuildingId(null);
+                  setSelectedBuildingId(0);
+                  setSelectedOtherBuildings([]);
                 } else {
                   setSelectedBuildingId(clickedBuildingId);
                 }
                 if (!buildingIsCleared && isComplexBuilding(e)) {
-                  setSelectedOtherBuildings([clickedBuildingId]);
+                  const complexBuildings = foundComplexBuildings(
+                    e,
+                    map.current as mapboxgl.Map,
+                    clickedBuildingId,
+                  );
+                  setSelectedOtherBuildings(complexBuildings);
                 } else {
                   setSelectedOtherBuildings([]);
                 }
@@ -127,7 +136,7 @@ export default function MainMap() {
                 layers: ['3DBuildings'],
               });
               if (!features || features.length === 0) {
-                setSelectedBuildingId(null);
+                setSelectedBuildingId(0);
               }
             }
           });
@@ -155,21 +164,43 @@ export default function MainMap() {
   }, []);
 
   useEffect(() => {
-    console.log('selectedBuildingId', selectedBuildingId);
-
     if (!map.current) return;
 
+    console.log(
+      'selectedOtherBuildings -----------------------',
+      selectedOtherBuildings,
+    );
+    const selectedOtherBuildingsIds = selectedOtherBuildings
+      ? selectedOtherBuildings.map((building) => building.id)
+      : [];
+
+    console.log('selectedOtherBuildingsIds -----------------------', selectedOtherBuildingsIds);
+
     const updateBuildingColor = () => {
+      console.log('updateBuildingColor', selectedBuildingId);
       if (
         map.current instanceof mapboxgl.Map &&
         map.current.getLayer('3DBuildings')
       ) {
-        map.current.setPaintProperty('3DBuildings', 'fill-extrusion-color', [
-          'case',
-          ['==', ['id'], ['literal', selectedBuildingId]],
-          selectedOtherBuildings.length ? '#959' : '#851',
-          '#aaa',
-        ]);
+        if (selectedOtherBuildingsIds.length) {
+          console.log('1');
+          map.current.setPaintProperty('3DBuildings', 'fill-extrusion-color', [
+            'case',
+            ['in', ['id'], ['literal', selectedOtherBuildingsIds]],
+            '#959',
+            '#aaa',
+          ]);
+        }
+        else {
+          console.log('2');
+          map.current.setPaintProperty('3DBuildings', 'fill-extrusion-color', [
+            'case',
+            ['==', ['id'], ['literal', selectedBuildingId]],
+            '#851',
+            '#aaa',
+          ]);
+        }
+
         map.current.setPaintProperty('3DBuildings', 'fill-extrusion-height', [
           'case',
           ['==', ['id'], ['literal', selectedBuildingId]],
@@ -192,7 +223,7 @@ export default function MainMap() {
         map.current.off('style.load', updateBuildingColor);
       }
     };
-  }, [selectedBuildingId]);
+  }, [selectedBuildingId, selectedOtherBuildings]);
 
   return (
     <div className="relative w-full h-screen">
