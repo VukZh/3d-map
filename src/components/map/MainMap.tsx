@@ -7,6 +7,7 @@ import mapboxgl, {
 } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { foundComplexBuildings, isComplexBuilding } from '@/helpers/utils';
+import getPopup from "@/helpers/getPopup";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
@@ -14,7 +15,7 @@ export default function MainMap() {
   const [lng, setLng] = useState(76.92);
   const [lat, setLat] = useState(43.25);
   const [zoom, setZoom] = useState(11);
-  const [selectedBuildingId, setSelectedBuildingId] = useState<number>(null);
+  const [selectedBuildingId, setSelectedBuildingId] = useState<number>(0);
   const [selectedOtherBuildings, setSelectedOtherBuildings] =
     useState<MapboxGeoJSONFeature[]>();
 
@@ -25,7 +26,7 @@ export default function MainMap() {
     if (!mapContainer.current) return;
     map.current = new Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v11',
+      style: 'mapbox://styles/mapbox/streets-v12',
       center: [lng, lat],
       zoom: 13,
     });
@@ -53,6 +54,7 @@ export default function MainMap() {
       map.current.on('load', () => {
         if (map.current instanceof mapboxgl.Map) {
           const layers = map.current.getStyle().layers;
+          console.log('>>>>>>>>>>>>>', map.current.getStyle());
           const labelLayerId = layers?.find(
             (layer) => layer.type === 'symbol' && layer.layout?.['text-field'],
           )?.id;
@@ -96,26 +98,47 @@ export default function MainMap() {
             labelLayerId,
           );
 
+          map.current.showTileBoundaries = true;
+
           map.current.on(
             'click',
             '3DBuildings',
             (e: MapMouseEvent & EventData) => {
+              console.log('click---------', e.features);
+              const complexBuilding = isComplexBuilding(e);
               if (e.features && e.features.length > 0) {
                 const clickedBuildingId = e.features[0].id;
-                console.log('Selected Building ID:', clickedBuildingId);
+                console.log(
+                  'Selected Building ID:',
+                  clickedBuildingId,
+                  selectedBuildingId,
+                );
                 console.log(
                   'Building Properties:',
                   e.features[0]._vectorTileFeature._values,
                 );
-                let buildingIsCleared = false;
-                if (clickedBuildingId === selectedBuildingId) {
-                  buildingIsCleared = true;
-                  setSelectedBuildingId(0);
-                  setSelectedOtherBuildings([]);
-                } else {
-                  setSelectedBuildingId(clickedBuildingId);
-                }
-                if (!buildingIsCleared && isComplexBuilding(e)) {
+
+                // const clickedFeature = e.features[0];
+                // const popupContent = `
+                //   <div>
+                //     <p>ID: ${clickedFeature.id}</p>
+                //     <p>Type: ${clickedFeature.properties.type}</p>
+                //     <button id="popupButton">Click Me!</button>
+                //   </div>
+                // `;
+                //
+                // if (map.current instanceof Map) {
+                //   new mapboxgl.Popup({offset: 25})
+                //     .setLngLat(e.lngLat)
+                //     .setHTML(popupContent)
+                //     .addTo(map.current);
+                // }
+
+                getPopup(e, map.current as mapboxgl.Map, complexBuilding);
+
+                setSelectedBuildingId(clickedBuildingId);
+
+                if (complexBuilding) {
                   const complexBuildings = foundComplexBuildings(
                     e,
                     map.current as mapboxgl.Map,
@@ -129,6 +152,14 @@ export default function MainMap() {
             },
           );
 
+          map.current.on(
+            'click',
+            'building',
+            (e: MapMouseEvent & EventData) => {
+              console.log('building click---------', e.features);
+            },
+          );
+
           map.current.on('click', (e: MapMouseEvent & EventData) => {
             console.log('Clicked:', map.current?.getProjection());
             if (map.current instanceof mapboxgl.Map) {
@@ -137,6 +168,7 @@ export default function MainMap() {
               });
               if (!features || features.length === 0) {
                 setSelectedBuildingId(0);
+                setSelectedOtherBuildings([]);
               }
             }
           });
@@ -174,7 +206,10 @@ export default function MainMap() {
       ? selectedOtherBuildings.map((building) => building.id)
       : [];
 
-    console.log('selectedOtherBuildingsIds -----------------------', selectedOtherBuildingsIds);
+    console.log(
+      'selectedOtherBuildingsIds -----------------------',
+      selectedOtherBuildingsIds,
+    );
 
     const updateBuildingColor = () => {
       console.log('updateBuildingColor', selectedBuildingId);
@@ -190,8 +225,7 @@ export default function MainMap() {
             '#959',
             '#aaa',
           ]);
-        }
-        else {
+        } else {
           console.log('2');
           map.current.setPaintProperty('3DBuildings', 'fill-extrusion-color', [
             'case',

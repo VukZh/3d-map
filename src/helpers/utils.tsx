@@ -5,7 +5,7 @@ const RadiusInMeters = 200;
 export const isComplexBuilding = (e: MapMouseEvent & EventData) => {
   const values = e.features[0]._vectorTileFeature._values;
   console.log(
-    '>>> ',
+    'isComplex >>> ',
     values.findIndex((value) => value === 'building:part') !== -1,
   );
   return values.findIndex((value) => value === 'building:part') !== -1;
@@ -38,7 +38,7 @@ export const foundComplexBuildings = (
       ) !== -1,
   );
 
-  console.log('filteredFeatures000000000:', filteredFeatures0, id);
+  // console.log('filteredFeatures000000000:', filteredFeatures0, id);
 
   const feature0 = filteredFeatures0.find((feature) => feature.id === id);
 
@@ -48,7 +48,7 @@ export const foundComplexBuildings = (
       feature0._vectorTileFeature._values.length,
   );
 
-  console.log('filteredFeatures11111111:', filteredFeatures1);
+  // console.log('filteredFeatures11111111:', filteredFeatures1);
 
   const filteredFeatures2 = filteredFeatures1.filter(
     (feature) =>
@@ -56,16 +56,16 @@ export const foundComplexBuildings = (
       JSON.stringify(feature0._vectorTileFeature._values),
   );
 
-  console.log('filteredFeatures2222222:', filteredFeatures2);
+  // console.log('filteredFeatures2222222:', filteredFeatures2);
 
-  if (features.length) {
-    features.forEach(function (feature) {
-      console.log('feature:', feature.id, feature);
-      console.log('feature.properties:', feature.properties);
-    });
-  } else {
-    console.log('features not found');
-  }
+  // if (features.length) {
+  //   features.forEach(function (feature) {
+  //     console.log('feature:', feature.id, feature);
+  //     console.log('feature.properties:', feature.properties);
+  //   });
+  // } else {
+  //   console.log('features not found');
+  // }
 
   return filteredFeatures2;
 
