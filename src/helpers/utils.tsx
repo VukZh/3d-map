@@ -1,6 +1,6 @@
 import { EventData, LngLat, MapMouseEvent, Point } from 'mapbox-gl';
-import { useContext } from 'react';
-import { Context } from '@/store/contextProvider';
+import * as turf from '@turf/turf';
+
 
 const EarthRadius = 6378137;
 const RadiusInMeters = 200;
@@ -11,6 +11,45 @@ export const isComplexBuilding = (values) => {
   );
   return values.findIndex((value) => value === 'building:part') !== -1;
 };
+
+export function isComplexBuilding2(featureValues, map, bufferDistance = 100) {
+  if (!featureValues || !map) return false;
+
+  const currentFeatureGeometry = featureValues.geometry;
+  const currentFeatureId = featureValues.id;
+
+  const bufferedGeometry = turf.buffer(currentFeatureGeometry, bufferDistance, { units: 'meters' });
+
+  const bbox = turf.bbox(bufferedGeometry);
+
+  const sw = map.project([bbox[0], bbox[1]]); // southwest corner
+  const ne = map.project([bbox[2], bbox[3]]); // northeast corner
+
+  const features = map.queryRenderedFeatures([sw, ne], {
+    layers: ['3DBuildings']
+  });
+
+  console.log('features:features:features:features:', featureValues.id, features);
+
+  const areCoordinatesEqual = (coords1, coords2) => {
+    return JSON.stringify(coords1) === JSON.stringify(coords2);
+  };
+
+  for (const feature of features) {
+    if (feature.id === currentFeatureId && areCoordinatesEqual(currentFeatureGeometry.coordinates, feature.geometry.coordinates)) continue;
+
+    if (feature.geometry) {
+      const intersects = turf.booleanIntersects(currentFeatureGeometry, feature.geometry);
+      const touches = turf.booleanTouches(currentFeatureGeometry, feature.geometry);
+
+      if (intersects || touches) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
 
 export const foundComplexBuildings = (
   e: MapMouseEvent & EventData,
@@ -59,4 +98,36 @@ export const foundComplexBuildings = (
   );
 
   return filteredFeatures2;
+};
+
+
+export const foundComplexBuildings2 = (
+  map: mapboxgl.Map,
+  id: number
+) => {
+  const features = map.queryRenderedFeatures({
+    layers: ['3DBuildings'],
+  });
+
+  const feature0 = features.find((feature) => feature.id === id);
+
+  const foundFeatures = new Set();
+  const findAdjacentFeatures = (currentFeature) => {
+    foundFeatures.add(currentFeature);
+    const adjacentFeatures = features.filter((feature) => {
+      if (foundFeatures.has(feature)) return false;
+      const currentGeometry = currentFeature.geometry;
+      const featureGeometry = feature.geometry;
+      return (
+        turf.booleanTouches(currentGeometry, featureGeometry) ||
+        turf.booleanOverlap(currentGeometry, featureGeometry)
+      );
+    });
+
+    adjacentFeatures.forEach(findAdjacentFeatures);
+  };
+
+  findAdjacentFeatures(feature0);
+
+  return Array.from(foundFeatures).length === 1 ? [] : Array.from(foundFeatures);
 };
