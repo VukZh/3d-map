@@ -1,6 +1,5 @@
 import mapboxgl, { EventData, Map, MapMouseEvent } from 'mapbox-gl';
 import ReactDOMServer from 'react-dom/server';
-import 'mapbox-gl/dist/mapbox-gl.css';
 
 export default function getPopup(
   e: MapMouseEvent & EventData,
@@ -9,16 +8,7 @@ export default function getPopup(
 ) {
   const clickedFeature = e.features[0];
   const popupContent = (
-    <div
-      style={{
-        maxWidth: '150px',
-        height: '80px',
-        margin: '10px',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-      }}>
+    <div className="max-w-xs h-20 m-2 flex flex-col justify-center items-center">
       <p style={{ fontSize: '14px' }}>ID: {clickedFeature.id}</p>
       <p style={{ fontSize: '14px' }}>Type: {clickedFeature.properties.type}</p>
       <p style={{ fontSize: '14px' }}>

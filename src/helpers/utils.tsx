@@ -1,9 +1,10 @@
 import { EventData, LngLat, MapMouseEvent, Point } from 'mapbox-gl';
+import { useContext } from 'react';
+import { Context } from '@/store/contextProvider';
 
 const EarthRadius = 6378137;
 const RadiusInMeters = 200;
-export const isComplexBuilding = (e: MapMouseEvent & EventData) => {
-  const values = e.features[0]._vectorTileFeature._values;
+export const isComplexBuilding = (values) => {
   console.log(
     'isComplex >>> ',
     values.findIndex((value) => value === 'building:part') !== -1,
@@ -15,12 +16,13 @@ export const foundComplexBuildings = (
   e: MapMouseEvent & EventData,
   map: mapboxgl.Map,
   id: number,
+  radius: number,
 ) => {
   const pointLngLat: LngLat = e.lngLat;
   const point: Point = map.project(pointLngLat);
 
   const radiusInPixels =
-    RadiusInMeters /
+    radius /
     ((Math.cos((pointLngLat.lat * Math.PI) / 180) * 2 * Math.PI * EarthRadius) /
       256 /
       Math.pow(2, map.getZoom()));
@@ -56,18 +58,5 @@ export const foundComplexBuildings = (
       JSON.stringify(feature0._vectorTileFeature._values),
   );
 
-  // console.log('filteredFeatures2222222:', filteredFeatures2);
-
-  // if (features.length) {
-  //   features.forEach(function (feature) {
-  //     console.log('feature:', feature.id, feature);
-  //     console.log('feature.properties:', feature.properties);
-  //   });
-  // } else {
-  //   console.log('features not found');
-  // }
-
   return filteredFeatures2;
-
-
 };
