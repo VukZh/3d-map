@@ -1,12 +1,16 @@
 import { useContext, useEffect, useRef, useState } from 'react';
-import mapboxgl, { Map, MapMouseEvent, EventData } from 'mapbox-gl';
+import mapboxgl, {
+  Map,
+  MapMouseEvent,
+  EventData,
+} from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import '../../custom-mapbox-styles.css';
 import {
-  foundComplexBuildingsByAttr,
-  foundComplexBuildingsByGeom,
-  isComplexBuildingByAttr,
-  isComplexBuildingByGeom,
+  foundComplexBuildings,
+  foundComplexBuildings2,
+  isComplexBuilding,
+  isComplexBuilding2,
 } from '@/helpers/utils';
 import getPopup from '@/helpers/getPopup';
 import Settings from '@/components/settings/Settings';
@@ -151,6 +155,7 @@ export default function MainMap() {
       ? selectedOtherBuildings.map((building) => building.id)
       : [];
 
+
     const updateBuildingColor = () => {
       if (
         map.current instanceof mapboxgl.Map &&
@@ -197,20 +202,20 @@ export default function MainMap() {
 
           const complexBuilding = typeComplexBuilding
             ? false
-            : isComplexBuildingByAttr(e.features[0]._vectorTileFeature._values);
+            : isComplexBuilding(e.features[0]._vectorTileFeature._values);
 
           const complexBuildings = typeComplexBuilding
-            ? foundComplexBuildingsByGeom(
+            ? foundComplexBuildings2(
+              map.current as mapboxgl.Map,
+              clickedBuildingId,
+            )
+            : complexBuilding
+              ? foundComplexBuildings(
+                e,
                 map.current as mapboxgl.Map,
                 clickedBuildingId,
+                searchRadius,
               )
-            : complexBuilding
-              ? foundComplexBuildingsByAttr(
-                  e,
-                  map.current as mapboxgl.Map,
-                  clickedBuildingId,
-                  searchRadius,
-                )
               : [];
           if (complexBuildings.length > 0) {
             setSelectedOtherBuildings(complexBuildings);
@@ -242,11 +247,10 @@ export default function MainMap() {
   useEffect(() => {
     const clickHandler = (e: MapMouseEvent & EventData) => {
       if (map.current && showPopup) {
+
         const complexBuilding = typeComplexBuilding
-          ? isComplexBuildingByGeom(e.features?.[0], map.current)
-          : isComplexBuildingByAttr(
-              e.features?.[0]?._vectorTileFeature._values,
-            );
+          ? isComplexBuilding2(e.features?.[0], map.current)
+          : isComplexBuilding(e.features?.[0]?._vectorTileFeature._values);
 
         getPopup(e, map.current, complexBuilding);
       }

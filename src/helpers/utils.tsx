@@ -2,15 +2,11 @@ import { EventData, LngLat, MapMouseEvent, Point } from 'mapbox-gl';
 import * as turf from '@turf/turf';
 
 const EarthRadius = 6378137;
-export const isComplexBuildingByAttr = (values) => {
-  values.findIndex((value) => value === 'building:part') !== -1;
+export const isComplexBuilding = (values) => {
+  return values.findIndex((value) => value === 'building:part') !== -1;
 };
 
-export function isComplexBuildingByGeom(
-  featureValues,
-  map,
-  bufferDistance = 20,
-) {
+export function isComplexBuilding2(featureValues, map, bufferDistance = 20) {
   if (!featureValues || !map) return false;
 
   const currentFeatureGeometry = featureValues.geometry;
@@ -62,7 +58,7 @@ export function isComplexBuildingByGeom(
   return false;
 }
 
-export const foundComplexBuildingsByAttr = (
+export const foundComplexBuildings = (
   e: MapMouseEvent & EventData,
   map: mapboxgl.Map,
   id: number,
@@ -107,7 +103,7 @@ export const foundComplexBuildingsByAttr = (
   return filteredFeatures2;
 };
 
-export const foundComplexBuildingsByGeom = (map: mapboxgl.Map, id: number) => {
+export const foundComplexBuildings2 = (map: mapboxgl.Map, id: number) => {
   const features = map.queryRenderedFeatures({
     layers: ['3DBuildings'],
   });
