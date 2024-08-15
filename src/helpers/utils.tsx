@@ -5,6 +5,7 @@ import * as turf from '@turf/turf';
 const EarthRadius = 6378137;
 const RadiusInMeters = 200;
 export const isComplexBuilding = (values) => {
+  console.log('isComplexBuilding1');
   console.log(
     'isComplex >>> ',
     values.findIndex((value) => value === 'building:part') !== -1,
@@ -12,7 +13,8 @@ export const isComplexBuilding = (values) => {
   return values.findIndex((value) => value === 'building:part') !== -1;
 };
 
-export function isComplexBuilding2(featureValues, map, bufferDistance = 100) {
+export function isComplexBuilding2(featureValues, map, bufferDistance = 20) {
+  console.log('isComplexBuilding2');
   if (!featureValues || !map) return false;
 
   const currentFeatureGeometry = featureValues.geometry;
@@ -22,11 +24,11 @@ export function isComplexBuilding2(featureValues, map, bufferDistance = 100) {
 
   const bbox = turf.bbox(bufferedGeometry);
 
-  const sw = map.project([bbox[0], bbox[1]]); // southwest corner
-  const ne = map.project([bbox[2], bbox[3]]); // northeast corner
+  const sw = map.project([bbox[0], bbox[1]]);
+  const ne = map.project([bbox[2], bbox[3]]);
 
   const features = map.queryRenderedFeatures([sw, ne], {
-    layers: ['3DBuildings']
+    layers: ['building']
   });
 
   console.log('features:features:features:features:', featureValues.id, features);
@@ -57,6 +59,7 @@ export const foundComplexBuildings = (
   id: number,
   radius: number,
 ) => {
+  console.log('foundComplexBuildings1');
   const pointLngLat: LngLat = e.lngLat;
   const point: Point = map.project(pointLngLat);
 
@@ -108,6 +111,7 @@ export const foundComplexBuildings2 = (
   const features = map.queryRenderedFeatures({
     layers: ['3DBuildings'],
   });
+  console.log('foundComplexBuildings2');
 
   const feature0 = features.find((feature) => feature.id === id);
 

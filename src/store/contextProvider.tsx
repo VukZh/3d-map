@@ -26,6 +26,10 @@ type ContextType = {
   setShowDetails: Dispatch<SetStateAction<ContextType['showDetails']>>;
   searchRadius: number;
   setSearchRadius: Dispatch<SetStateAction<ContextType['searchRadius']>>;
+  typeComplexBuilding: boolean;
+  setTypeComplexBuilding: Dispatch<
+    SetStateAction<ContextType['typeComplexBuilding']>
+  >;
 };
 
 const initialContext: ContextType = {
@@ -41,6 +45,8 @@ const initialContext: ContextType = {
   setShowDetails: () => {},
   searchRadius: 200,
   setSearchRadius: () => {},
+  typeComplexBuilding: false,
+  setTypeComplexBuilding: () => {},
 };
 
 export const Context = createContext<ContextType>(initialContext);
@@ -64,6 +70,9 @@ export const ContextProvider = ({ children }: { children: ReactNode }) => {
   const [searchRadius, setSearchRadius] = useState<ContextType['searchRadius']>(
     initialContext.searchRadius,
   );
+  const [typeComplexBuilding, setTypeComplexBuilding] = useState<
+    ContextType['typeComplexBuilding']
+  >(initialContext.typeComplexBuilding);
 
   return (
     <Context.Provider
@@ -80,6 +89,8 @@ export const ContextProvider = ({ children }: { children: ReactNode }) => {
         setShowDetails,
         searchRadius,
         setSearchRadius,
+        typeComplexBuilding,
+        setTypeComplexBuilding,
       }}>
       {children}
     </Context.Provider>

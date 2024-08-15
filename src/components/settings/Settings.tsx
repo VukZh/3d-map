@@ -12,6 +12,8 @@ import {
 import { useContext } from 'react';
 import { Context } from '@/store/contextProvider';
 import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 export default function Settings() {
   const {
@@ -23,6 +25,8 @@ export default function Settings() {
     setShowDetails,
     searchRadius,
     setSearchRadius,
+    typeComplexBuilding,
+    setTypeComplexBuilding,
   } = useContext(Context);
 
   return (
@@ -59,6 +63,22 @@ export default function Settings() {
         <DropdownMenuItem
           className="w-58 h-8 pl-8"
           onSelect={(e) => e.preventDefault()}>
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="type-mode"
+              checked={typeComplexBuilding}
+              onCheckedChange={() =>
+                setTypeComplexBuilding(!typeComplexBuilding)
+              }
+            />
+            <Label htmlFor="type-mode" className="text-xs">
+              Complexity by <b>attributes/geometry</b>
+            </Label>
+          </div>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="w-58 h-8 pl-8"
+          onSelect={(e) => e.preventDefault()}>
           <div className="flex items-center">
             <Slider
               defaultValue={[200]}
@@ -67,9 +87,10 @@ export default function Settings() {
               max={300}
               step={100}
               className="w-20"
+              disabled={typeComplexBuilding}
               onValueChange={(values) => setSearchRadius(values[0])}
             />
-            <div className="text-xs pl-2">{`${searchRadius}m search`}</div>
+            <div className={`text-xs pl-2 ${typeComplexBuilding ? 'text-gray-300' : 'text-black'}`}>{`${searchRadius}m search`}</div>
           </div>
         </DropdownMenuItem>
       </DropdownMenuContent>
