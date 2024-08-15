@@ -90,7 +90,8 @@ export default function Settings() {
               disabled={typeComplexBuilding}
               onValueChange={(values) => setSearchRadius(values[0])}
             />
-            <div className={`text-xs pl-2 ${typeComplexBuilding ? 'text-gray-300' : 'text-black'}`}>{`${searchRadius}m search`}</div>
+            <div
+              className={`text-xs pl-2 ${typeComplexBuilding ? 'text-gray-300' : 'text-black'}`}>{`${searchRadius}m search`}</div>
           </div>
         </DropdownMenuItem>
       </DropdownMenuContent>

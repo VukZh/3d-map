@@ -1,26 +1,24 @@
 import { EventData, LngLat, MapMouseEvent, Point } from 'mapbox-gl';
 import * as turf from '@turf/turf';
 
-
 const EarthRadius = 6378137;
-const RadiusInMeters = 200;
-export const isComplexBuilding = (values) => {
-  console.log('isComplexBuilding1');
-  console.log(
-    'isComplex >>> ',
-    values.findIndex((value) => value === 'building:part') !== -1,
-  );
-  return values.findIndex((value) => value === 'building:part') !== -1;
+export const isComplexBuildingByAttr = (values) => {
+  values.findIndex((value) => value === 'building:part') !== -1;
 };
 
-export function isComplexBuilding2(featureValues, map, bufferDistance = 20) {
-  console.log('isComplexBuilding2');
+export function isComplexBuildingByGeom(
+  featureValues,
+  map,
+  bufferDistance = 20,
+) {
   if (!featureValues || !map) return false;
 
   const currentFeatureGeometry = featureValues.geometry;
   const currentFeatureId = featureValues.id;
 
-  const bufferedGeometry = turf.buffer(currentFeatureGeometry, bufferDistance, { units: 'meters' });
+  const bufferedGeometry = turf.buffer(currentFeatureGeometry, bufferDistance, {
+    units: 'meters',
+  });
 
   const bbox = turf.bbox(bufferedGeometry);
 
@@ -28,21 +26,32 @@ export function isComplexBuilding2(featureValues, map, bufferDistance = 20) {
   const ne = map.project([bbox[2], bbox[3]]);
 
   const features = map.queryRenderedFeatures([sw, ne], {
-    layers: ['building']
+    layers: ['building'],
   });
-
-  console.log('features:features:features:features:', featureValues.id, features);
 
   const areCoordinatesEqual = (coords1, coords2) => {
     return JSON.stringify(coords1) === JSON.stringify(coords2);
   };
 
   for (const feature of features) {
-    if (feature.id === currentFeatureId && areCoordinatesEqual(currentFeatureGeometry.coordinates, feature.geometry.coordinates)) continue;
+    if (
+      feature.id === currentFeatureId &&
+      areCoordinatesEqual(
+        currentFeatureGeometry.coordinates,
+        feature.geometry.coordinates,
+      )
+    )
+      continue;
 
     if (feature.geometry) {
-      const intersects = turf.booleanIntersects(currentFeatureGeometry, feature.geometry);
-      const touches = turf.booleanTouches(currentFeatureGeometry, feature.geometry);
+      const intersects = turf.booleanIntersects(
+        currentFeatureGeometry,
+        feature.geometry,
+      );
+      const touches = turf.booleanTouches(
+        currentFeatureGeometry,
+        feature.geometry,
+      );
 
       if (intersects || touches) {
         return true;
@@ -53,13 +62,12 @@ export function isComplexBuilding2(featureValues, map, bufferDistance = 20) {
   return false;
 }
 
-export const foundComplexBuildings = (
+export const foundComplexBuildingsByAttr = (
   e: MapMouseEvent & EventData,
   map: mapboxgl.Map,
   id: number,
   radius: number,
 ) => {
-  console.log('foundComplexBuildings1');
   const pointLngLat: LngLat = e.lngLat;
   const point: Point = map.project(pointLngLat);
 
@@ -82,8 +90,6 @@ export const foundComplexBuildings = (
       ) !== -1,
   );
 
-  // console.log('filteredFeatures000000000:', filteredFeatures0, id);
-
   const feature0 = filteredFeatures0.find((feature) => feature.id === id);
 
   const filteredFeatures1 = filteredFeatures0.filter(
@@ -91,8 +97,6 @@ export const foundComplexBuildings = (
       feature._vectorTileFeature._values.length ===
       feature0._vectorTileFeature._values.length,
   );
-
-  // console.log('filteredFeatures11111111:', filteredFeatures1);
 
   const filteredFeatures2 = filteredFeatures1.filter(
     (feature) =>
@@ -103,15 +107,10 @@ export const foundComplexBuildings = (
   return filteredFeatures2;
 };
 
-
-export const foundComplexBuildings2 = (
-  map: mapboxgl.Map,
-  id: number
-) => {
+export const foundComplexBuildingsByGeom = (map: mapboxgl.Map, id: number) => {
   const features = map.queryRenderedFeatures({
     layers: ['3DBuildings'],
   });
-  console.log('foundComplexBuildings2');
 
   const feature0 = features.find((feature) => feature.id === id);
 
@@ -133,5 +132,7 @@ export const foundComplexBuildings2 = (
 
   findAdjacentFeatures(feature0);
 
-  return Array.from(foundFeatures).length === 1 ? [] : Array.from(foundFeatures);
+  return Array.from(foundFeatures).length === 1
+    ? []
+    : Array.from(foundFeatures);
 };
