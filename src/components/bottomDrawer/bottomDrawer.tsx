@@ -44,7 +44,7 @@ export default function BottomDrawer() {
 
   const buildings = allBuildings(selectedBuilding!, selectedOtherBuildings);
   const buildingsIds = buildings
-    .map((building) => building.id)
+    .map((building) => building?.id)
     .filter(Boolean)
     .reduce((acc: string[], id) => {
       let newId = "" + id;
@@ -81,7 +81,7 @@ export default function BottomDrawer() {
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                {buildingsIds.map((id, index) => (
+                {buildingsIds.map((id) => (
                   <SelectItem key={id} value={[] + id} className="text-sm">
                     {id}
                   </SelectItem>
