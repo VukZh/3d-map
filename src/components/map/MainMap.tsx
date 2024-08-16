@@ -1,9 +1,5 @@
 import { useContext, useEffect, useRef, useState } from 'react';
-import mapboxgl, {
-  Map,
-  MapMouseEvent,
-  EventData,
-} from 'mapbox-gl';
+import mapboxgl, { Map, MapMouseEvent, EventData } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import '../../custom-mapbox-styles.css';
 import {
@@ -15,6 +11,7 @@ import {
 import getPopup from '@/helpers/getPopup';
 import Settings from '@/components/settings/Settings';
 import { Context } from '@/store/contextProvider';
+import BottomDrawer from '@/components/bottomDrawer/bottomDrawer';
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
@@ -25,14 +22,18 @@ export default function MainMap() {
 
   const {
     showPopup,
-    selectedBuildingId,
-    setSelectedBuildingId,
+    selectedBuilding,
+    setSelectedBuilding,
     selectedOtherBuildings,
     setSelectedOtherBuildings,
     showTileBoundaries,
     searchRadius,
     typeComplexBuilding,
+    showDetails,
+    currentDetailsFeatureId,
   } = useContext(Context);
+
+  console.log('currentDetailsFeatureId', currentDetailsFeatureId);
 
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const map = useRef<Map | null>(null);
@@ -44,7 +45,7 @@ export default function MainMap() {
       style: 'mapbox://styles/mapbox/streets-v12',
       center: [lng, lat],
       zoom: 13,
-    });
+    } as any);
 
     if (map.current instanceof mapboxgl.Map) {
       map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
@@ -64,7 +65,7 @@ export default function MainMap() {
       map.current.dragPan.enable({
         rightButton: true,
         leftButton: false,
-      });
+      } as any);
 
       map.current.on('load', () => {
         if (map.current instanceof mapboxgl.Map) {
@@ -115,12 +116,13 @@ export default function MainMap() {
           map.current.showTileBoundaries = showTileBoundaries;
 
           map.current.on('click', (e: MapMouseEvent & EventData) => {
+            console.log('c1');
             if (map.current instanceof mapboxgl.Map) {
               const features = map.current.queryRenderedFeatures(e.point, {
                 layers: ['3DBuildings'],
               });
               if (!features || features.length === 0) {
-                setSelectedBuildingId(0);
+                setSelectedBuilding(null);
                 setSelectedOtherBuildings([]);
               }
             }
@@ -155,7 +157,6 @@ export default function MainMap() {
       ? selectedOtherBuildings.map((building) => building.id)
       : [];
 
-
     const updateBuildingColor = () => {
       if (
         map.current instanceof mapboxgl.Map &&
@@ -164,22 +165,22 @@ export default function MainMap() {
         if (selectedOtherBuildingsIds.length) {
           map.current.setPaintProperty('3DBuildings', 'fill-extrusion-color', [
             'case',
-            ['in', ['id'], ['literal', selectedOtherBuildingsIds]],
+            ['in', ['id'], ['literal', selectedOtherBuildingsIds || 0]],
             '#959',
             '#aaa',
           ]);
         } else {
           map.current.setPaintProperty('3DBuildings', 'fill-extrusion-color', [
             'case',
-            ['==', ['id'], ['literal', selectedBuildingId]],
+            ['==', ['id'], ['literal', selectedBuilding?.id || 0]],
             '#851',
             '#aaa',
           ]);
         }
-
+        console.log('selectedBuilding?.id', selectedBuilding?.id);
         map.current.setPaintProperty('3DBuildings', 'fill-extrusion-height', [
           'case',
-          ['==', ['id'], ['literal', selectedBuildingId]],
+          ['==', ['id'], ['literal', selectedBuilding?.id || 0]],
           ['*', ['get', 'height'], 1.05],
           ['get', 'height'],
         ]);
@@ -194,45 +195,13 @@ export default function MainMap() {
       }
     }
 
-    if (map.current instanceof Map) {
-      map.current.on('click', '3DBuildings', (e: MapMouseEvent & EventData) => {
-        if (e.features && e.features.length > 0) {
-          const clickedBuildingId = e.features[0].id;
-          setSelectedBuildingId(clickedBuildingId);
-
-          const complexBuilding = typeComplexBuilding
-            ? false
-            : isComplexBuilding(e.features[0]._vectorTileFeature._values);
-
-          const complexBuildings = typeComplexBuilding
-            ? foundComplexBuildings2(
-              map.current as mapboxgl.Map,
-              clickedBuildingId,
-            )
-            : complexBuilding
-              ? foundComplexBuildings(
-                e,
-                map.current as mapboxgl.Map,
-                clickedBuildingId,
-                searchRadius,
-              )
-              : [];
-          if (complexBuildings.length > 0) {
-            setSelectedOtherBuildings(complexBuildings);
-          } else {
-            setSelectedOtherBuildings([]);
-          }
-        }
-      });
-    }
-
     return () => {
       if (map.current instanceof mapboxgl.Map) {
         map.current.off('style.load', updateBuildingColor);
       }
     };
   }, [
-    selectedBuildingId,
+    selectedBuilding?.id,
     selectedOtherBuildings,
     searchRadius,
     typeComplexBuilding,
@@ -245,24 +214,77 @@ export default function MainMap() {
   }, [showTileBoundaries]);
 
   useEffect(() => {
+    if (!map.current) return;
+
     const clickHandler = (e: MapMouseEvent & EventData) => {
-      if (map.current && showPopup) {
+      console.log('c2');
+      if (e.features && e.features.length > 0) {
+        const clickedBuilding = e.features[0];
+        setSelectedBuilding(clickedBuilding);
 
         const complexBuilding = typeComplexBuilding
-          ? isComplexBuilding2(e.features?.[0], map.current)
-          : isComplexBuilding(e.features?.[0]?._vectorTileFeature._values);
+          ? false
+          : isComplexBuilding(e.features[0]._vectorTileFeature._values);
 
-        getPopup(e, map.current, complexBuilding);
+        const complexBuildings = typeComplexBuilding
+          ? foundComplexBuildings2(
+              map.current as mapboxgl.Map,
+              clickedBuilding.id,
+            )
+          : complexBuilding
+            ? foundComplexBuildings(
+                e,
+                map.current as mapboxgl.Map,
+                clickedBuilding.id,
+                searchRadius,
+              )
+            : [];
+        if (complexBuildings.length > 0) {
+          setSelectedOtherBuildings(complexBuildings);
+        } else {
+          setSelectedOtherBuildings([]);
+        }
       }
     };
-
-    if (map.current && showPopup) {
+    if (map.current instanceof Map) {
+      map.current.off('click', '3DBuildings', clickHandler);
       map.current.on('click', '3DBuildings', clickHandler);
     }
 
     return () => {
-      if (map.current) {
+      if (map.current instanceof mapboxgl.Map) {
         map.current.off('click', '3DBuildings', clickHandler);
+      }
+    };
+  }, [
+    typeComplexBuilding,
+    searchRadius,
+    selectedBuilding?.id,
+    selectedOtherBuildings,
+  ]);
+
+  useEffect(() => {
+    const clickHandler = (e: MapMouseEvent & EventData) => {
+      if (map.current && showPopup) {
+        const complexBuilding = typeComplexBuilding
+          ? isComplexBuilding2(e.features?.[0], map.current)
+          : isComplexBuilding(e.features?.[0]?._vectorTileFeature._values);
+
+        getPopup(e, map.current!, complexBuilding);
+      }
+    };
+
+    if (map.current && showPopup) {
+      if (map.current instanceof Map) {
+        map.current.on('click', '3DBuildings', clickHandler);
+      }
+    }
+
+    return () => {
+      if (map.current) {
+        if (map.current instanceof Map) {
+          map.current.off('click', '3DBuildings', clickHandler);
+        }
       }
     };
   }, [showPopup, typeComplexBuilding, selectedOtherBuildings]);
@@ -277,6 +299,7 @@ export default function MainMap() {
       </div>
       <div ref={mapContainer} className="w-full h-full" />
       <Settings />
+      {showDetails && <BottomDrawer />}
     </div>
   );
 }

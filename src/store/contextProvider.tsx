@@ -8,9 +8,9 @@ import {
 } from 'react';
 
 type ContextType = {
-  selectedBuildingId: number;
-  setSelectedBuildingId: Dispatch<
-    SetStateAction<ContextType['selectedBuildingId']>
+  selectedBuilding: MapboxGeoJSONFeature | null;
+  setSelectedBuilding: Dispatch<
+    SetStateAction<ContextType['selectedBuilding']>
   >;
   selectedOtherBuildings: MapboxGeoJSONFeature[];
   setSelectedOtherBuildings: Dispatch<
@@ -30,11 +30,15 @@ type ContextType = {
   setTypeComplexBuilding: Dispatch<
     SetStateAction<ContextType['typeComplexBuilding']>
   >;
+  currentDetailsFeatureId: number;
+  setCurrentDetailsFeatureId: Dispatch<
+    SetStateAction<ContextType['currentDetailsFeature']>
+  >;
 };
 
 const initialContext: ContextType = {
-  selectedBuildingId: 0,
-  setSelectedBuildingId: () => {},
+  selectedBuilding: null,
+  setSelectedBuilding: () => {},
   selectedOtherBuildings: [],
   setSelectedOtherBuildings: () => {},
   showPopup: true,
@@ -47,14 +51,16 @@ const initialContext: ContextType = {
   setSearchRadius: () => {},
   typeComplexBuilding: false,
   setTypeComplexBuilding: () => {},
+  currentDetailsFeatureId: 0,
+  setCurrentDetailsFeatureId: () => {},
 };
 
 export const Context = createContext<ContextType>(initialContext);
 
 export const ContextProvider = ({ children }: { children: ReactNode }) => {
   const [selectedBuildingId, setSelectedBuildingId] = useState<
-    ContextType['selectedBuildingId']
-  >(initialContext.selectedBuildingId);
+    ContextType['selectedBuilding']
+  >(initialContext.selectedBuilding);
   const [selectedOtherBuildings, setSelectedOtherBuildings] = useState<
     ContextType['selectedOtherBuildings']
   >(initialContext.selectedOtherBuildings);
@@ -73,12 +79,15 @@ export const ContextProvider = ({ children }: { children: ReactNode }) => {
   const [typeComplexBuilding, setTypeComplexBuilding] = useState<
     ContextType['typeComplexBuilding']
   >(initialContext.typeComplexBuilding);
+  const [currentDetailsFeatureId, setCurrentDetailsFeatureId] = useState<
+    ContextType['currentDetailsFeatureId']
+  >(initialContext.currentDetailsFeatureId);
 
   return (
     <Context.Provider
       value={{
-        selectedBuildingId,
-        setSelectedBuildingId,
+        selectedBuilding: selectedBuildingId,
+        setSelectedBuilding: setSelectedBuildingId,
         selectedOtherBuildings,
         setSelectedOtherBuildings,
         showPopup,
@@ -91,6 +100,8 @@ export const ContextProvider = ({ children }: { children: ReactNode }) => {
         setSearchRadius,
         typeComplexBuilding,
         setTypeComplexBuilding,
+        currentDetailsFeatureId,
+        setCurrentDetailsFeatureId,
       }}>
       {children}
     </Context.Provider>
