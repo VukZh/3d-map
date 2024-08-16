@@ -32,7 +32,7 @@ type ContextType = {
   >;
   currentDetailsFeatureId: number;
   setCurrentDetailsFeatureId: Dispatch<
-    SetStateAction<ContextType['currentDetailsFeature']>
+    SetStateAction<ContextType['currentDetailsFeatureId']>
   >;
 };
 

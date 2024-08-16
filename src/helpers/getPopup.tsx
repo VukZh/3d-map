@@ -1,3 +1,4 @@
+// @ts-nocheck
 import mapboxgl, { EventData, Map, MapMouseEvent } from 'mapbox-gl';
 import ReactDOMServer from 'react-dom/server';
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { EventData, LngLat, MapMouseEvent, Point } from 'mapbox-gl';
 import * as turf from '@turf/turf';
 

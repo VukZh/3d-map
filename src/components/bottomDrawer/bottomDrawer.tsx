@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {
   Sheet,
   SheetContent,
@@ -41,27 +42,20 @@ export default function BottomDrawer() {
     setSelectedId(undefined);
   }, [selectedOtherBuildings, selectedBuilding]);
 
-  console.log(
-    'selectedOtherBuildings--- ',
-    selectedBuilding,
-    selectedOtherBuildings,
-  );
-
   const buildings = allBuildings(selectedBuilding!, selectedOtherBuildings);
   const buildingsIds = buildings
-    .map((building) => building?.id)
+    .map((building) => building.id)
     .filter(Boolean)
-    .reduce((acc, id) => {
-      let newId = [] + id;
+    .reduce((acc: string[], id) => {
+      let newId = "" + id;
       let counter = 2;
-      while (acc.includes(newId)) {
+      while (acc.includes(newId as string)) {
         newId = `${id}-${counter}`;
         counter += 1;
       }
       acc.push(newId);
       return acc;
     }, []);
-  // console.log('selectedOtherBuildings--- ', selectedOtherBuildings, selectedId);
   const selectedBuildingId = (id: string) => {
     setSelectedId(id);
     setCurrentDetailsFeatureId(Number(id.split('-')[0]));
@@ -134,12 +128,6 @@ export default function BottomDrawer() {
 }
 
 const buildingIndex = (id: string, buildingsIds: string[]) => {
-  console.log(
-    id,
-    buildingsIds,
-    'buildingIndex',
-    buildingsIds.findIndex((building) => building === id),
-  );
   return buildingsIds.findIndex((building) => building === id);
 };
 

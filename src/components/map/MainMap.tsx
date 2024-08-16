@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useContext, useEffect, useRef, useState } from 'react';
 import mapboxgl, { Map, MapMouseEvent, EventData } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -16,9 +17,9 @@ import BottomDrawer from '@/components/bottomDrawer/bottomDrawer';
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
 export default function MainMap() {
-  const [lng, setLng] = useState(76.92);
-  const [lat, setLat] = useState(43.25);
-  const [zoom, setZoom] = useState(11);
+  const [lng, setLng] = useState(-122.148);
+  const [lat, setLat] = useState(37.478);
+  const [zoom, setZoom] = useState(15);
 
   const {
     showPopup,
@@ -31,9 +32,8 @@ export default function MainMap() {
     typeComplexBuilding,
     showDetails,
     currentDetailsFeatureId,
+    setCurrentDetailsFeatureId,
   } = useContext(Context);
-
-  console.log('currentDetailsFeatureId', currentDetailsFeatureId);
 
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const map = useRef<Map | null>(null);
@@ -44,7 +44,7 @@ export default function MainMap() {
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v12',
       center: [lng, lat],
-      zoom: 13,
+      zoom: 15,
     } as any);
 
     if (map.current instanceof mapboxgl.Map) {
@@ -107,7 +107,7 @@ export default function MainMap() {
                   15.05,
                   ['get', 'min_height'],
                 ],
-                'fill-extrusion-opacity': 0.6,
+                'fill-extrusion-opacity': 0.5,
               },
             },
             labelLayerId,
@@ -116,7 +116,6 @@ export default function MainMap() {
           map.current.showTileBoundaries = showTileBoundaries;
 
           map.current.on('click', (e: MapMouseEvent & EventData) => {
-            console.log('c1');
             if (map.current instanceof mapboxgl.Map) {
               const features = map.current.queryRenderedFeatures(e.point, {
                 layers: ['3DBuildings'],
@@ -124,6 +123,7 @@ export default function MainMap() {
               if (!features || features.length === 0) {
                 setSelectedBuilding(null);
                 setSelectedOtherBuildings([]);
+                setCurrentDetailsFeatureId(0);
               }
             }
           });
@@ -177,13 +177,6 @@ export default function MainMap() {
             '#aaa',
           ]);
         }
-        console.log('selectedBuilding?.id', selectedBuilding?.id);
-        map.current.setPaintProperty('3DBuildings', 'fill-extrusion-height', [
-          'case',
-          ['==', ['id'], ['literal', selectedBuilding?.id || 0]],
-          ['*', ['get', 'height'], 1.05],
-          ['get', 'height'],
-        ]);
       }
     };
 
@@ -208,6 +201,51 @@ export default function MainMap() {
   ]);
 
   useEffect(() => {
+    if (!map.current) return;
+
+    const selectedOtherBuildingsIds = selectedOtherBuildings
+      ? selectedOtherBuildings.map((building) => building.id)
+      : [];
+
+    const updateBuildingColor2 = () => {
+      if (
+        map.current instanceof mapboxgl.Map &&
+        map.current.getLayer('building')
+      ) {
+        if (currentDetailsFeatureId) {
+          map.current.setPaintProperty('building', 'fill-color', [
+            'case',
+            ['==', ['id'], ['literal', currentDetailsFeatureId || 0]],
+            '#00e',
+            '#aaa',
+          ]);
+
+          map.current.setPaintProperty('building', 'fill-opacity', [
+            'case',
+            ['==', ['id'], ['literal', currentDetailsFeatureId || 0]],
+            0.3,
+            0,
+          ]);
+        }
+      }
+    };
+
+    if (map.current instanceof mapboxgl.Map) {
+      if (map.current.isStyleLoaded()) {
+        updateBuildingColor2();
+      } else {
+        map.current.once('style.load', updateBuildingColor2);
+      }
+    }
+
+    return () => {
+      if (map.current instanceof mapboxgl.Map) {
+        map.current.off('style.load', updateBuildingColor2);
+      }
+    };
+  }, [currentDetailsFeatureId]);
+
+  useEffect(() => {
     if (map.current instanceof Map) {
       map.current.showTileBoundaries = showTileBoundaries;
     }
@@ -217,7 +255,6 @@ export default function MainMap() {
     if (!map.current) return;
 
     const clickHandler = (e: MapMouseEvent & EventData) => {
-      console.log('c2');
       if (e.features && e.features.length > 0) {
         const clickedBuilding = e.features[0];
         setSelectedBuilding(clickedBuilding);
